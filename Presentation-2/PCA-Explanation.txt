@@ -1,0 +1,44 @@
+Certainly! Here’s a summarized list of the main steps in the PCA-based Pan-Sharpening algorithm:
+
+1. Get Image Dimensions:
+Extract the dimensions of the panchromatic (pan) and multispectral (hs) images.
+
+2. Compute Upsampling Ratio:
+Calculate the upsampling ratio based on the dimensions of the images.
+
+3. Check Ratio Consistency:
+Ensure that the upsampling ratio is consistent for both dimensions.
+
+4. Upsample Multispectral Image:
+Use interpolation to upsample the multispectral image.
+u_hs = upsample_interp23(hs, ratio)
+
+5. Apply Principal Component Analysis (PCA):
+Use PCA to transform the upsampled multispectral image and identify key spatial information.
+p = princomp(n_components=C)
+pca_hs = p.fit_transform(np.reshape(u_hs, (M*N, C)))
+
+6. Fusion with Panchromatic Information:
+Extract the first principal component and adjust the panchromatic image based on its characteristics.
+I = pca_hs[:, :, 0]
+image_hr = (image_hr - np.mean(image_hr))*np.std(I, ddof=1)/np.std(image_hr, ddof=1) + np.mean(I)
+pca_hs[:, :, 0] = image_hr[:, :, 0]
+
+7. Inverse Transform:
+Reverse the PCA transformation to obtain the fused image.
+I_PCA = p.inverse_transform(pca_hs)
+
+8. Equalization:
+Adjust the intensity of the fused image to ensure visual coherence.
+I_PCA = I_PCA - np.mean(I_PCA, axis=(0, 1)) + np.mean(u_hs)
+
+9. Pixel Value Adjustment:
+Ensure pixel values are within the valid range.
+I_PCA[I_PCA < 0] = 0
+I_PCA[I_PCA > 1] = 1
+
+10. Return Result:
+Convert the fused image to the desired format (e.g., uint8) and scale it for visualization.
+return np.uint8(I_PCA * 255)
+
+These steps outline the process of pan-sharpening using PCA, which combines high-resolution spatial details from the panchromatic image with the spectral richness of the multispectral image to produce a visually enhanced result.
